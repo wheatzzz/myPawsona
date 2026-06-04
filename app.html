@@ -51,7 +51,6 @@
     <a href="intro.html" class="side-nav-icon">
       <img src="assets/intro.gif" alt="" onerror="this.style.display='none'" />
     </a>
-    <button class="side-nav-clear" id="btnDevClear">clear</button>
   </nav>
 
   <!-- ========================================================
@@ -331,14 +330,6 @@
       btn.addEventListener('click', () => { mouseMode = !mouseMode; applyMode(); });
       // Start in paw mode — webcam already auto-started
     })();
-
-    // Dev clear
-    document.getElementById('btnDevClear').addEventListener('click', () => {
-      if (confirm('Clear all saved cats?')) {
-        localStorage.removeItem('pawsona_cats_v1');
-        alert('Cleared.');
-      }
-    });
 
     // After cat submitted, redirect to play.html
     window.addEventListener('pawsona:catSubmitted', () => {
