@@ -14,7 +14,7 @@
      so existing drag code in main.js + play.html just works
    - Cursor is position:fixed on body, works on all pages
    
-   DEV MODE: press D to toggle landmark overlay
+   Hand cursor system for Pawsona
 ============================================================ */
 
 (function () {
@@ -27,7 +27,6 @@
   let detecting     = false;
   let webcamReady   = false;  // blocks grab/click until fully live
   let rafId       = null;
-  let devMode     = false;
 
   // Grab/drag state
   let isGrabbing        = false;
@@ -72,9 +71,6 @@
   ---------------------------------------------------------- */
   const video = document.getElementById('webcamFeed');
   let clawCursor  = null;
-  let devOverlay  = null;
-  let devCanvas   = null;
-  let devCtx      = null;
 
   /* ----------------------------------------------------------
      CLAW CURSOR — fixed on body, works on every page
@@ -278,8 +274,6 @@
       if (el === document.documentElement) continue;
       if (el.id === 'clawCursor') continue;
       if (el.id === 'pawsona-hide-cursor') continue;
-      if (devOverlay && (el === devOverlay || devOverlay.contains(el))) continue;
-      if (devCanvas && el === devCanvas) continue;
       return el;
     }
     return document.body;
@@ -614,7 +608,6 @@
           waveHistory.length = 0;
         }
 
-        if (devMode) drawLandmarks(lm);
 
       } else {
         hideClaw();
@@ -630,7 +623,6 @@
         openFrames = 0;
         waveHistory.length = 0;
         curlHistory.length = 0;
-        if (devMode) drawLandmarks(null);
       }
 
     } catch (_) {}
@@ -643,7 +635,6 @@
   ---------------------------------------------------------- */
   async function start() {
     createClawCursor();
-    createDevOverlay();
     showStatusOverlay('assets/webcam_loading.gif');
 
     // Hard timeout — if model doesn't load in 25s, fall back to mouse-only claw
@@ -664,8 +655,6 @@
       video.srcObject = stream;
       await video.play();
 
-      const preview = document.getElementById('devVideoPreview');
-      if (preview) preview.srcObject = stream;
 
       if (!handModel) {
         // Wait for handpose CDN — max 15s
@@ -781,97 +770,6 @@
     window.addEventListener('load', () => setTimeout(tryAutoStart, 500));
   }
 
-  /* ----------------------------------------------------------
-     DEV OVERLAY (press D)
-  ---------------------------------------------------------- */
-  function createDevOverlay() {
-    if (devOverlay) return;
-    devOverlay = document.createElement('div');
-    devOverlay.style.cssText = `
-      position: fixed; bottom: 80px; right: 16px;
-      width: 310px; background: rgba(10,10,14,0.92);
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
-      padding: 12px; z-index: 9998; font-family: monospace;
-      font-size: 12px; color: #fff; display: none;
-      backdrop-filter: blur(6px);
-    `;
-    devOverlay.innerHTML = `
-      <div style="font-weight:700;margin-bottom:8px;color:#f90">Pawsona Dev</div>
-      <div id="devStats" style="margin-bottom:8px;color:#aaa">waiting...</div>
-      <video id="devVideoPreview" autoplay playsinline muted
-        style="width:100%;border-radius:8px;display:block;margin-top:6px"></video>
-    `;
-    document.body.appendChild(devOverlay);
-
-    // Hand landmark canvas overlay
-    devCanvas = document.createElement('canvas');
-    devCanvas.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9997`;
-    devCanvas.width  = 640;
-    devCanvas.height = 480;
-    devCtx = devCanvas.getContext('2d');
-    document.body.appendChild(devCanvas);
-  }
-
-  function toggleDev() {
-    devMode = !devMode;
-    if (devOverlay) devOverlay.style.display = devMode ? 'block' : 'none';
-    if (devCanvas)  devCanvas.style.display  = devMode ? 'block' : 'none';
-    if (!devMode && devCtx) devCtx.clearRect(0, 0, 640, 480);
-  }
-
-  function drawLandmarks(lm) {
-    if (!devCtx) return;
-    devCtx.clearRect(0, 0, 640, 480);
-    if (!lm || !devMode) return;
-    // Scale to match devCanvas size = viewport
-    const sx = window.innerWidth  / (video.videoWidth  || 640);
-    const sy = window.innerHeight / (video.videoHeight || 480);
-
-    const connections = [
-      [0,1],[1,2],[2,3],[3,4],
-      [0,5],[5,6],[6,7],[7,8],
-      [5,9],[9,10],[10,11],[11,12],
-      [9,13],[13,14],[14,15],[15,16],
-      [13,17],[17,18],[18,19],[19,20],[0,17],
-    ];
-
-    devCtx.strokeStyle = '#4af';
-    devCtx.lineWidth   = 1.5;
-    connections.forEach(([a, b]) => {
-      const lA = lm[a], lB = lm[b];
-      devCtx.beginPath();
-      // Mirror X to match visual cursor
-      devCtx.moveTo((1 - lA[0] / (video.videoWidth || 640))  * window.innerWidth,
-                          lA[1] / (video.videoHeight || 480)  * window.innerHeight);
-      devCtx.lineTo((1 - lB[0] / (video.videoWidth || 640))  * window.innerWidth,
-                          lB[1] / (video.videoHeight || 480)  * window.innerHeight);
-      devCtx.stroke();
-    });
-    lm.forEach(pt => {
-      devCtx.fillStyle = '#fff';
-      devCtx.beginPath();
-      devCtx.arc(
-        (1 - pt[0] / (video.videoWidth || 640))  * window.innerWidth,
-              pt[1] / (video.videoHeight || 480)  * window.innerHeight,
-        3, 0, Math.PI * 2
-      );
-      devCtx.fill();
-    });
-
-    // Update stats panel
-    const statsEl = document.getElementById('devStats');
-    if (statsEl) {
-      const curl = curlHistory.length
-        ? (curlHistory.reduce((a, b) => a + b, 0) / curlHistory.length * 100).toFixed(0)
-        : 0;
-      statsEl.textContent = `curl: ${curl}%  grab: ${isGrabbing}  wave: ${waveHistory.length}pts`;
-    }
-  }
-
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT') return;
-    if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey) toggleDev();
-  });
 
   /* ----------------------------------------------------------
      YELL STATE (face gone / eyes closed) — kept from original
