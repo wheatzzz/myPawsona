@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cat Shelter — Pawsona</title>
+  <link rel="icon" type="image/gif" href="assets/icon.gif" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body.shelter-page {
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    #physicsCanvas {
+      position: fixed;
+      top: 0;
+      left: var(--nav-w);
+      width: calc(100vw - var(--nav-w));
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Cat elements — absolutely positioned, driven by Matter.js */
+    .shelter-cat {
+      position: fixed;
+      pointer-events: auto;
+      cursor: grab;
+      transform-origin: center center;
+      z-index: 10;
+      transition: filter 0.2s;
+    }
+    .shelter-cat.held { cursor: grabbing; z-index: 100; }
+    .shelter-cat canvas {
+      display: block;
+      border-radius: 50%;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.18));
+    }
+
+    /* Name tooltip on hover */
+    .shelter-cat-name {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--white);
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    .shelter-cat:hover .shelter-cat-name { opacity: 1; }
+
+    /* Header floats above */
+    .shelter-header {
+      position: fixed;
+      top: 1.5rem;
+      left: calc(var(--nav-w) + 2rem);
+      z-index: 200;
+      pointer-events: none;
+    }
+    .shelter-title { filter: url(#wiggleUI); }
+
+    .gallery-empty {
+      position: fixed;
+      top: 50%;
+      left: calc(var(--nav-w) + 50%);
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body class="shelter-page">
+
+  <!-- Wiggle filters -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="wigglyFilter" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="1" result="noise">
+          <animate attributeName="seed" values="1;2;3;4;5;6;7;8;1" dur="0.8s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
+      </filter>
+      <filter id="wiggleUI" x="-3%" y="-3%" width="106%" height="106%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.022" numOctaves="3" seed="5" result="noise">
+          <animate attributeName="seed" values="5;6;7;8;9;10;5" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="baseFrequency" values="0.018 0.022;0.022 0.018;0.018 0.022" dur="4s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Nav -->
+  <nav class="side-nav">
+    <a href="index.html" class="side-nav-logo">
+      <img src="assets/logo.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="play.html"    class="side-nav-icon">
+      <img src="assets/icon.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="app.html"     class="side-nav-icon">
+      <img src="assets/draw.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="shelter.html" class="side-nav-icon active">
+      <img src="assets/shelter.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="intro.html"   class="side-nav-icon">
+      <img src="assets/intro.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <button class="side-nav-clear" id="btnShelterClear">clear</button>
+  </nav>
+
+  <!-- Floating header -->
+  <div class="shelter-header">
+    <h1 class="shelter-title">Cat Shelter.</h1>
+    <p class="shelter-count" id="shelterCount"></p>
+  </div>
+
+  <!-- Empty state -->
+  <div class="gallery-empty" id="galleryEmpty" hidden>
+    <span class="empty-icon">*</span>
+    <p>No cats yet. <a href="app.html" style="color:var(--orange)">Be the first.</a></p>
+  </div>
+
+  <!-- Physics cat container -->
+  <div id="catContainer"></div>
+
+  <script src="js/rig.js" defer></script>
+  <script src="js/gallery.js" defer></script>
+
+  <!-- Matter.js physics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+
+    const NAV_W = 96;
+    const CAT_R = 80;
+    const CAT_D = CAT_R * 2;
+    const ANIM_STATES = ['idle', 'walk', 'pet', 'hover', 'hiss', 'idle', 'walk'];
+
+    /* ── Load cats from localStorage ── */
+    const countEl = document.getElementById('shelterCount');
+    const cats = window.loadCatsFromStorage ? window.loadCatsFromStorage() : [];
+
+    if (countEl) countEl.textContent = `${cats.length} cat${cats.length===1?'':'s'} found a home`;
+
+    if (!cats.length) {
+      document.getElementById('galleryEmpty').hidden = false;
+      return;
+    }
+
+    /* ── Matter.js setup ── */
+    const { Engine, Render, Runner, Bodies, Body, Events, Mouse, MouseConstraint, World, Composite } = Matter;
+
+    const W = window.innerWidth  - NAV_W;
+    const H = window.innerHeight;
+
+    const engine = Engine.create({ gravity: { y: 1.2 } });
+    const world  = engine.world;
+
+    // Invisible walls: floor, left, right, ceiling
+    const WALL = 60;
+    const floor  = Bodies.rectangle(W/2, H + WALL/2, W + WALL*2, WALL, { isStatic: true, label: 'wall' });
+    const wallL  = Bodies.rectangle(NAV_W - WALL/2, H/2, WALL, H*3, { isStatic: true, label: 'wall' });
+    const wallR  = Bodies.rectangle(W + NAV_W + WALL/2, H/2, WALL, H*3, { isStatic: true, label: 'wall' });
+    World.add(world, [floor, wallL, wallR]);
+
+    // Mouse constraint for dragging
+    const mouse = Mouse.create(document.body);
+    const mc    = MouseConstraint.create(engine, {
+      mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    World.add(world, mc);
+
+    /* ── Build cat elements ── */
+    const catObjects = []; // { body, el, canvas, rig }
+
+    function shuffled(arr) {
+      const a = [...arr];
+      for (let i = a.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+      }
+      return a;
+    }
+
+    function spawnCat(catData, idx) {
+      // Drop x: spread across width, random
+      const dropX = NAV_W + CAT_R + Math.random() * (W - CAT_D);
+      const dropY = -CAT_R - 10;
+
+      // Physics body
+      const body = Bodies.circle(dropX, dropY, CAT_R, {
+        restitution: 0.55,   // bouncy
+        friction: 0.05,
+        frictionAir: 0.008,
+        density: 0.002,
+        label: 'cat',
+      });
+      // Give slight random horizontal nudge on spawn
+      Body.setVelocity(body, {
+        x: (Math.random() - 0.5) * 6,
+        y: Math.random() * 2,
+      });
+      World.add(world, body);
+
+      // DOM element
+      const el = document.createElement('div');
+      el.className = 'shelter-cat';
+      el.style.width  = CAT_D + 'px';
+      el.style.height = CAT_D + 'px';
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = 240;
+      canvas.height = 240;
+      canvas.style.width  = CAT_D + 'px';
+      canvas.style.height = CAT_D + 'px';
+
+      const nameEl = document.createElement('div');
+      nameEl.className   = 'shelter-cat-name';
+      nameEl.textContent = catData.name || 'unnamed';
+
+      el.appendChild(canvas);
+      el.appendChild(nameEl);
+      document.getElementById('catContainer').appendChild(el);
+
+      // Build live rig
+      let rig = null;
+      if (catData.parts && window.buildRig) {
+        rig = window.buildRig(canvas, catData.parts, 'idle');
+      }
+
+      const obj = { body, el, canvas, rig, animTimer: null };
+      catObjects.push(obj);
+
+      // Random animation cycling
+      function cycleAnim() {
+        if (!rig) return;
+        const seq = shuffled(ANIM_STATES);
+        let i = 0;
+        function next() {
+          rig.setState(seq[i++ % seq.length]);
+          obj.animTimer = setTimeout(next, 1800 + Math.random() * 3000);
+        }
+        // Start at different times per cat
+        obj.animTimer = setTimeout(next, idx * 600 + Math.random() * 1000);
+      }
+      cycleAnim();
+
+      // Drag: grab suspends physics rotation, release gives throw velocity
+      let dragging = false, dragStartX = 0, dragStartY = 0;
+      let prevX = 0, prevY = 0, throwVX = 0, throwVY = 0;
+
+      el.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        dragging = true;
+        el.classList.add('held');
+        Body.setStatic(body, true);
+        dragStartX = e.clientX - (body.position.x - CAT_R);
+        dragStartY = e.clientY - (body.position.y - CAT_R);
+        prevX = e.clientX; prevY = e.clientY;
+        e.stopPropagation();
+      });
+
+      window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        throwVX = e.clientX - prevX;
+        throwVY = e.clientY - prevY;
+        prevX = e.clientX; prevY = e.clientY;
+        const nx = e.clientX - dragStartX + CAT_R;
+        const ny = e.clientY - dragStartY + CAT_R;
+        Body.setPosition(body, { x: nx, y: ny });
+      });
+
+      window.addEventListener('mouseup', e => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove('held');
+        Body.setStatic(body, false);
+        // Prefer tracked drag velocity; fall back to webcam claw velocity; always fall
+        let vx = Math.abs(throwVX) > 0.5 ? throwVX * 0.6 : (window._clawVX || 0) * 0.4;
+        let vy = Math.abs(throwVY) > 0.5 ? throwVY * 0.6 : (window._clawVY || 0) * 0.4;
+        if (Math.abs(vy) < 0.5) vy = 2; // always fall if no vertical throw
+        Body.setVelocity(body, { x: vx, y: vy });
+        Body.setAngularVelocity(body, vx * 0.04);
+        throwVX = 0; throwVY = 0;
+      });
+
+      // Touch drag
+      el.addEventListener('touchstart', e => {
+        dragging = true;
+        el.classList.add('held');
+        Body.setStatic(body, true);
+        const t = e.touches[0];
+        dragStartX = t.clientX - (body.position.x - CAT_R);
+        dragStartY = t.clientY - (body.position.y - CAT_R);
+        prevX = t.clientX; prevY = t.clientY;
+        e.preventDefault();
+      }, { passive: false });
+
+      window.addEventListener('touchmove', e => {
+        if (!dragging) return;
+        const t = e.touches[0];
+        throwVX = t.clientX - prevX;
+        throwVY = t.clientY - prevY;
+        prevX = t.clientX; prevY = t.clientY;
+        Body.setPosition(body, {
+          x: t.clientX - dragStartX + CAT_R,
+          y: t.clientY - dragStartY + CAT_R,
+        });
+      }, { passive: false });
+
+      window.addEventListener('touchend', () => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove('held');
+        Body.setStatic(body, false);
+        const vx = Math.abs(throwVX) > 0.5 ? throwVX * 0.6 : 0;
+        const vy = Math.abs(throwVY) > 0.5 ? throwVY * 0.6 : 2;
+        Body.setVelocity(body, { x: vx, y: vy });
+        Body.setAngularVelocity(body, vx * 0.04);
+        throwVX = 0; throwVY = 0;
+      });
+
+      return obj;
+    }
+
+    /* ── Stagger drop: one cat every 0.5s ── */
+    cats.forEach((cat, i) => {
+      setTimeout(() => spawnCat(cat, i), i * 500);
+    });
+
+    /* ── Physics loop: sync DOM to Matter.js bodies ── */
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+
+    function syncLoop() {
+      catObjects.forEach(obj => {
+        const { x, y } = obj.body.position;
+        const angle     = obj.body.angle;
+        obj.el.style.left      = (x - CAT_R) + 'px';
+        obj.el.style.top       = (y - CAT_R) + 'px';
+        obj.el.style.transform = `rotate(${angle}rad)`;
+      });
+      requestAnimationFrame(syncLoop);
+    }
+    syncLoop();
+
+    /* ── Occasional random kicks to keep things lively ── */
+    setInterval(() => {
+      catObjects.forEach(obj => {
+        if (obj.el.classList.contains('held')) return;
+        // 20% chance per cat per interval to get a nudge
+        if (Math.random() < 0.2) {
+          Body.applyForce(obj.body, obj.body.position, {
+            x: (Math.random() - 0.5) * 0.012,
+            y: -Math.random() * 0.008,
+          });
+        }
+      });
+    }, 3000);
+
+    /* ── Clear button ── */
+    document.getElementById('btnShelterClear').addEventListener('click', () => {
+      if (!confirm('Remove all cats from the shelter?')) return;
+      localStorage.removeItem('pawsona_cats_v1');
+      location.reload();
+    });
+
+    /* ── Resize ── */
+    window.addEventListener('resize', () => {
+      const nW = window.innerWidth - NAV_W;
+      const nH = window.innerHeight;
+      Body.setPosition(floor,  { x: nW/2, y: nH + WALL/2 });
+      Body.setPosition(wallR,  { x: nW + NAV_W + WALL/2, y: nH/2 });
+    });
+
+  });
+  </script>
+
+  <!-- Webcam hand cursor -->
+  <video id="webcamFeed" autoplay playsinline muted hidden></video>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.js" defer></script>
+  <script src="https://unpkg.com/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+  <script src="js/webcam.js" defer></script>
+
+</body>
+</html>

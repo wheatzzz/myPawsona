@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; script-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src * 'self' data: blob:; img-src * 'self' data: blob:; media-src * 'self' data: blob:; style-src * 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawsona</title>
+  <link rel="icon" type="image/gif" href="assets/icon.gif" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="app">
+
+  <!-- SVG filters: wigglyFilter for cats, wiggleUI for interface elements -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="wigglyFilter" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="1" result="noise">
+          <animate attributeName="seed" values="1;2;3;4;5;6;7;8;1" dur="0.8s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
+      </filter>
+      <filter id="wiggleUI" x="-3%" y="-3%" width="106%" height="106%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.022" numOctaves="3" seed="5" result="noise">
+          <animate attributeName="seed" values="5;6;7;8;9;10;5" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="baseFrequency" values="0.018 0.022;0.022 0.018;0.018 0.022" dur="4s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- ========================================================
+       SIDE NAV
+  ======================================================== -->
+  <nav class="side-nav">
+    <a href="index.html" class="side-nav-logo">
+      <img src="assets/logo.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="play.html" class="side-nav-icon">
+      <img src="assets/icon.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="app.html" class="side-nav-icon active">
+      <img src="assets/draw.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="shelter.html" class="side-nav-icon">
+      <img src="assets/shelter.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="intro.html" class="side-nav-icon">
+      <img src="assets/intro.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <button class="side-nav-clear" id="btnDevClear">clear</button>
+  </nav>
+
+  <!-- ========================================================
+       DRAWING PANEL
+  ======================================================== -->
+  <main class="drawing-panel" id="drawingPanel">
+
+    <!-- ── SLIDE DRAWING VIEW ── -->
+    <div id="drawingPanelContent">
+
+      <div class="slide-progress">
+        <div class="slide-progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="slide-header">
+        <div class="slide-title-row">
+          <h1 class="panel-title" id="slideTitle">Head</h1>
+          <div class="slide-header-actions">
+            <span class="slide-counter" id="slideCounter">1 / 7</span>
+          </div>
+        </div>
+        <p class="panel-subtitle" id="slideHint">Draw the face &amp; ears</p>
+      </div>
+
+      <!-- Canvas + tools side by side -->
+      <div class="canvas-tools-row">
+
+        <div class="canvas-wrap">
+          <img class="template-overlay" id="templateOverlay" src="assets/head.png" alt="" aria-hidden="true" />
+          <canvas id="drawingCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <!-- Tools: 2 columns -->
+        <aside class="tools-column">
+
+          <!-- Col A: sizes + palette -->
+          <div class="tools-col">
+            <!-- Visual size buttons — wire to hidden #brushSize via script below -->
+            <button class="size-btn active" data-size="4">
+              <img src="assets/size.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+            <button class="size-btn" data-size="10">
+              <img src="assets/size.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+            <button class="size-btn" data-size="20">
+              <img src="assets/size.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+
+            <!-- REQUIRED by drawing.js — hidden, wired by glue script -->
+            <input type="range" id="brushSize" min="2" max="32" value="8" style="display:none" />
+            <input type="color" id="brushColour" value="#2c1f0e" style="display:none" />
+
+            <span class="tool-divider"></span>
+
+            <!-- 6 colour palette slots -->
+            <div class="palette">
+              <button class="palette-slot active" data-color="#2c1f0e" style="--c:#2c1f0e">
+                <input type="color" value="#2c1f0e" tabindex="-1" />
+              </button>
+              <button class="palette-slot" data-color="#e07a35" style="--c:#e07a35">
+                <input type="color" value="#e07a35" tabindex="-1" />
+              </button>
+              <button class="palette-slot" data-color="#d44a4a" style="--c:#d44a4a">
+                <input type="color" value="#d44a4a" tabindex="-1" />
+              </button>
+              <button class="palette-slot" data-color="#7eb37a" style="--c:#7eb37a">
+                <input type="color" value="#7eb37a" tabindex="-1" />
+              </button>
+              <button class="palette-slot" data-color="#4a90d4" style="--c:#4a90d4">
+                <input type="color" value="#4a90d4" tabindex="-1" />
+              </button>
+              <button class="palette-slot" data-color="#ffffff" style="--c:#ffffff">
+                <input type="color" value="#ffffff" tabindex="-1" />
+              </button>
+            </div>
+            <p class="palette-hint">double-click to edit</p>
+          </div>
+
+          <!-- Col B: tool icons -->
+          <div class="tools-col">
+            <!-- btnEraser, btnFill, btnUndo, btnRedo, btnClear MUST exist for drawing.js -->
+            <button class="tool-icon active" id="btnBrush">
+              <img src="assets/pen.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+            <button class="tool-icon" id="btnEraser">
+              <img src="assets/eraser.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+            <button class="tool-icon" id="btnFill">
+              <img src="assets/fill.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+
+            <span class="tool-divider"></span>
+
+            <button class="tool-icon" id="btnUndo">
+              <img src="assets/arrow.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+            <button class="tool-icon flip-x" id="btnRedo">
+              <img src="assets/arrow.gif" alt="" onerror="this.style.display='none'" />
+            </button>
+
+            <span class="tool-divider"></span>
+
+            <button class="copy-last-btn" id="btnCopyLast">copy<br>last</button>
+          </div>
+
+        </aside>
+      </div>
+
+      <!-- Bottom nav -->
+      <div class="slide-nav">
+        <div class="slide-nav-left">
+          <!-- Cursor toggle — leftmost, naturally aligns with buttons via flexbox -->
+          <button id="btnCursorToggle" title="Switch cursor mode" style="background:none;border:none;padding:0;line-height:0;flex-shrink:0;">
+            <img id="cursorToggleImg" src="assets/mouse.gif" alt="cursor mode" style="height:108px;width:108px;object-fit:contain;display:block;image-rendering:-webkit-optimize-contrast;" />
+          </button>
+          <button class="btn-tool" id="btnToggleTemplate">Hide guide</button>
+          <button class="btn-tool" id="btnClear">Clear</button>
+        </div>
+        <p class="shortcut-hint">Ctrl+Z · Ctrl+Y · F fill · E erase · D brush</p>
+        <button class="btn-primary" id="btnNext">Next →</button>
+      </div>
+
+    </div>
+    <!-- END SLIDE VIEW -->
+
+    <!-- ── PREVIEW SCREEN ── -->
+    <div id="previewScreen" hidden>
+      <div style="padding:1.25rem 1.5rem; overflow-y:auto; height:100%; display:flex; flex-direction:column; gap:1rem;">
+
+        <div class="slide-header">
+          <div class="slide-title-row">
+            <h1 class="panel-title">Looking good!</h1>
+            <span class="slide-counter">8 / 8</span>
+          </div>
+          <p class="panel-subtitle">Tap any part below to redraw it.</p>
+        </div>
+
+        <!-- Vertical layout: big cat, then thumbs, then submit -->
+        <div style="display:flex; flex-direction:column; gap:1rem; align-items:center; flex:1; min-height:0; overflow-y:auto;">
+
+          <!-- Big assembled cat -->
+          <div class="preview-canvas-wrap">
+            <canvas id="previewCanvas" width="400" height="400" style="width:260px; height:260px; display:block;"></canvas>
+          </div>
+
+          <!-- Thumbnail strip -->
+          <div class="thumbnail-strip" id="thumbnailStrip"></div>
+
+          <!-- Name + submit -->
+          <div class="submit-row" style="width:100%;">
+            <input type="text" id="catName" class="cat-name-input" placeholder="Name your cat..." maxlength="24" />
+            <button class="btn-primary" id="btnSubmit">Add →</button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+    <!-- END PREVIEW -->
+
+  </main>
+
+
+
+
+
+  <!-- ========================================================
+       SCRIPTS
+  ======================================================== -->
+
+  <!-- drawing.js runs synchronously — must come before rig/gallery/main -->
+  <script src="js/drawing.js"></script>
+  <script src="js/rig.js"></script>
+  <script src="js/gallery.js"></script>
+  <script src="js/main.js"></script>
+
+  <script>
+    /* ── GLUE: wire visual icon buttons to drawing.js's hidden inputs ── */
+
+    // Size buttons → #brushSize
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('brushSize').value = btn.dataset.size;
+      });
+    });
+
+    // Palette slots → #brushColour
+    document.querySelectorAll('.palette-slot').forEach(slot => {
+      const picker = slot.querySelector('input[type="color"]');
+
+      slot.addEventListener('click', () => {
+        document.querySelectorAll('.palette-slot').forEach(s => s.classList.remove('active'));
+        slot.classList.add('active');
+        document.getElementById('brushColour').value = slot.dataset.color;
+        // turn off eraser when colour picked
+        const eb = document.getElementById('btnEraser');
+        if (eb && eb.classList.contains('active')) eb.click();
+      });
+
+      slot.addEventListener('dblclick', e => {
+        e.preventDefault();
+        picker.style.pointerEvents = 'auto';
+        picker.click();
+        setTimeout(() => { picker.style.pointerEvents = 'none'; }, 100);
+      });
+
+      picker.addEventListener('input', e => {
+        const c = e.target.value;
+        slot.style.setProperty('--c', c);
+        slot.dataset.color = c;
+        if (slot.classList.contains('active'))
+          document.getElementById('brushColour').value = c;
+      });
+    });
+
+    // Brush button: turn off eraser when clicked
+    document.getElementById('btnBrush').addEventListener('click', () => {
+      // drawing.js setMode('brush') handles the active class
+      const eb = document.getElementById('btnEraser');
+      if (eb && eb.classList.contains('active')) eb.click();
+    });
+
+    // Eraser state is managed by drawing.js — no need to sync brush here
+    document.getElementById('btnEraser').addEventListener('click', () => {
+      // drawing.js setMode handles all active states — nothing needed here
+    });
+
+    /* ── CURSOR MODE TOGGLE ──
+       PAW mode  (default): claw follows hand via webcam detection
+       MOUSE mode: webcam paused, claw follows real mouse position,
+                   claw_grab on mousedown, claw_open on mouseup.
+                   OS cursor stays hidden — claw IS the cursor.
+    ── */
+    (function() {
+      const btn  = document.getElementById('btnCursorToggle');
+      const img  = document.getElementById('cursorToggleImg');
+      let mouseMode = false;
+      let mmMove = null, mmDown = null, mmUp = null;
+
+      function enableMouseClaw() {
+        const claw = document.getElementById('clawCursor');
+        if (!claw) return;
+        claw.style.display = 'block';
+        claw.style.transition = 'none'; // instant tracking
+        mmMove = (e) => {
+          claw.style.left = e.clientX + 'px';
+          claw.style.top  = e.clientY + 'px';
+        };
+        mmDown = () => { claw.src = 'assets/claw_grab.gif?t=' + Date.now(); };
+        mmUp   = () => { claw.src = 'assets/claw_open.gif?t=' + Date.now(); };
+        window.addEventListener('mousemove', mmMove);
+        window.addEventListener('mousedown', mmDown);
+        window.addEventListener('mouseup',   mmUp);
+      }
+
+      function disableMouseClaw() {
+        if (mmMove) window.removeEventListener('mousemove', mmMove);
+        if (mmDown) window.removeEventListener('mousedown', mmDown);
+        if (mmUp)   window.removeEventListener('mouseup',   mmUp);
+        mmMove = mmDown = mmUp = null;
+      }
+
+      function applyMode() {
+        if (mouseMode) {
+          if (window.stopWebcam) window.stopWebcam();
+          enableMouseClaw();
+          img.src = 'assets/paw_back.gif?t=' + Date.now();
+        } else {
+          disableMouseClaw();
+          if (window.startWebcam) window.startWebcam();
+          img.src = 'assets/mouse.gif?t=' + Date.now();
+        }
+      }
+
+      btn.addEventListener('click', () => { mouseMode = !mouseMode; applyMode(); });
+      // Start in paw mode — webcam already auto-started
+    })();
+
+    // Dev clear
+    document.getElementById('btnDevClear').addEventListener('click', () => {
+      if (confirm('Clear all saved cats?')) {
+        localStorage.removeItem('pawsona_cats_v1');
+        alert('Cleared.');
+      }
+    });
+
+    // After cat submitted, redirect to play.html
+    window.addEventListener('pawsona:catSubmitted', () => {
+      setTimeout(() => { window.location.href = 'play.html'; }, 800);
+    });
+  </script>
+
+
+  <!-- Hidden webcam feed for hand detection -->
+  <video id="webcamFeed" autoplay playsinline muted hidden></video>
+
+  <!-- Hand cursor system — auto-starts on load -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.js" defer></script>
+  <script src="https://unpkg.com/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+  <script src="js/webcam.js" defer></script>
+
+</body>
+</html>

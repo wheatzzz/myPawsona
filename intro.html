@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawsona — Intro</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; script-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src * 'self' data: blob:; img-src * 'self' data: blob:; media-src * 'self' data: blob:; style-src * 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src * 'self' data: https://fonts.gstatic.com;" />
+  <link rel="icon" type="image/gif" href="assets/icon.gif" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    :root {
+      --dark-bg:      #1a1410;
+      --dark-bg-2:    #251c14;
+      --dark-fg:      #f5e8d0;
+      --dark-fg-mid:  #a89177;
+      --dark-border:  #463624;
+      --dark-accent:  #E07A35;
+    }
+
+    body.intro {
+      background: var(--dark-bg);
+      color: var(--dark-fg);
+      overflow: hidden;
+      height: 100vh;
+      margin: 0;
+      /* OS cursor visible until scene 2 — webcam.js hides it after */
+    }
+    body.intro.hand-mode { cursor: none; }
+
+    body.intro::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .vn-stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+    }
+
+    .vn-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 4.5rem 2.5rem 2rem;
+      overflow: hidden;
+    }
+
+    .vn-scene { display: none; width: 100%; max-width: 720px; }
+    .vn-scene.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      animation: sceneIn 0.5s ease-out;
+    }
+    @keyframes sceneIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .vn-scene.center { justify-content: flex-start; padding-top: 3rem; text-align: center; }
+    .scene-title {
+      font-family: var(--font-display);
+      font-size: 5rem;
+      line-height: 1;
+      color: var(--dark-fg);
+    }
+    .scene-subtitle {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--dark-fg-mid);
+    }
+
+    .scene-visual {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      aspect-ratio: 16 / 9;
+      padding: 2.5rem;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--dark-fg-mid);
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .scene-visual::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('assets/frame.gif') center/100% 100% no-repeat;
+      filter: invert(0.9) sepia(0.3);
+      pointer-events: none;
+    }
+    .scene-visual > * { position: relative; z-index: 1; }
+
+    .scene-h2 {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      color: var(--dark-fg);
+      text-align: center;
+    }
+
+    /* Hand demo scene — big claw gif centre stage */
+    .hand-demo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      padding-top: 2rem;
+    }
+    .hand-demo-gif {
+      width: 220px;
+      height: auto;
+      image-rendering: -webkit-optimize-contrast;
+      filter: drop-shadow(0 0 0px #000)
+              drop-shadow(-3px -3px 0px #000)
+              drop-shadow( 3px -3px 0px #000)
+              drop-shadow(-3px  3px 0px #000)
+              drop-shadow( 3px  3px 0px #000);
+      animation: floatHand 2.5s ease-in-out infinite;
+    }
+    @keyframes floatHand {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-14px); }
+    }
+    @keyframes waveHand {
+      0%, 100% { transform: rotate(-15deg); }
+      50%       { transform: rotate(15deg); }
+    }
+
+    /* Multi-item visual strip (tools, toys) */
+    .multi-visual {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 1.5rem 0;
+    }
+    .multi-visual-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .multi-visual-item img {
+      width: 180px;
+      height: 180px;
+      object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+    }
+    .multi-visual-item span {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      color: var(--dark-fg-mid);
+    }
+
+    /* Swear bubble demo */
+    .swear-demo {
+      display: flex;
+      gap: 1.2rem;
+      justify-content: center;
+      padding: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .swear-bubble-demo {
+      font-family: var(--font-display);
+      font-size: 3.2rem;
+      color: var(--dark-accent);
+      animation: swearPop 1.4s ease-in-out infinite;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+    }
+    @keyframes swearPop {
+      0%, 100% { transform: scale(1) rotate(-4deg); opacity: 0.7; }
+      50%       { transform: scale(1.2) rotate(4deg); opacity: 1; }
+    }
+    .hand-demo-label {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      color: var(--dark-accent);
+    }
+    .hand-demo-sub {
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--dark-fg-mid);
+      text-align: center;
+      max-width: 320px;
+    }
+
+    .vn-dialogue {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 4rem);
+      max-width: 820px;
+      background: var(--dark-bg-2);
+      border: 2px solid var(--dark-border);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.5rem 1.6rem;
+      min-height: 120px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+    }
+    .vn-dialogue-name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      color: var(--dark-accent);
+      margin-bottom: 0.3rem;
+    }
+    .vn-dialogue-text {
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      line-height: 1.55;
+      color: var(--dark-fg);
+      min-height: 3em;
+    }
+    .vn-advance-hint {
+      position: absolute;
+      bottom: 0.6rem;
+      right: 1rem;
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      color: var(--dark-fg-mid);
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.25; } }
+
+    .vn-dialogue.center {
+      position: static;
+      transform: none;
+      margin-top: 1.5rem;
+      width: 75%;
+      max-width: 580px;
+      min-height: 100px;
+    }
+
+    .vn-webcam {
+      background: var(--dark-bg-2);
+      border-left: 2px solid var(--dark-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      gap: 1rem;
+    }
+
+    .vn-webcam-frame {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      aspect-ratio: 1;
+      padding: 18px;
+    }
+    .vn-webcam-frame::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('assets/frame.gif') center/100% 100% no-repeat;
+      filter: invert(0.92) sepia(0.25);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .vn-webcam-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      border-radius: 4px;
+    }
+    .vn-webcam-inner video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    .vn-cat-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90%;
+      pointer-events: none;
+      transition: top 0.12s linear, left 0.12s linear, width 0.15s linear;
+      transform: translate(-50%, -50%);
+    }
+    .vn-webcam-label {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      color: var(--dark-fg);
+    }
+    .vn-webcam-status {
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--dark-fg-mid);
+      text-align: center;
+    }
+
+    .vn-progress {
+      position: fixed;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      z-index: 100;
+    }
+    .vn-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--dark-bg-2);
+      border: 1.5px solid var(--dark-border);
+      transition: background 0.2s;
+    }
+    .vn-dot.active { background: var(--dark-accent); border-color: var(--dark-accent); }
+    .vn-dot.done   { background: var(--dark-fg-mid); border-color: var(--dark-fg-mid); }
+
+    .vn-mini-logo {
+      position: fixed;
+      top: 1rem;
+      left: 1.2rem;
+      width: 90px;
+      z-index: 100;
+      opacity: 0.85;
+    }
+
+    /* Contract */
+    .contract-stage {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--dark-bg);
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem;
+      overflow: auto;
+      z-index: 20;
+    }
+    .contract-stage.active { display: flex; }
+
+    .contract-paper {
+      position: relative;
+      width: 90%;
+      max-width: 800px;
+      aspect-ratio: 4 / 5;
+      background: url('assets/contract.gif') center/contain no-repeat;
+    }
+    .contract-sign-area {
+      position: absolute;
+      bottom: 10%;
+      right: 12%;
+      width: 42%;
+      aspect-ratio: 1;
+    }
+    .contract-sign-prompt {
+      position: absolute;
+      bottom: -2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--dark-accent);
+      white-space: nowrap;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    .paw-stamp {
+      position: absolute;
+      pointer-events: none;
+      animation: stampDrop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      transform: translate(-50%, -50%);
+    }
+    .paw-stamp img { width: 80px; height: auto; display: block; }
+    @keyframes stampDrop {
+      0%   { transform: translate(-50%, -50%) scale(2);   opacity: 0; }
+      60%  { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+    }
+  </style>
+</head>
+<body class="intro">
+  <!-- SVG filters: wigglyFilter for cats, wiggleUI for interface elements -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="wigglyFilter" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="1" result="noise">
+          <animate attributeName="seed" values="1;2;3;4;5;6;7;8;1" dur="0.8s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
+      </filter>
+      <filter id="wiggleUI" x="-3%" y="-3%" width="106%" height="106%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.022" numOctaves="3" seed="5" result="noise">
+          <animate attributeName="seed" values="5;6;7;8;9;10;5" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="baseFrequency" values="0.018 0.022;0.022 0.018;0.018 0.022" dur="4s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <img class="vn-mini-logo" src="assets/logo.gif" alt="Pawsona" />
+  <div class="vn-progress" id="progressDots"></div>
+
+  <div class="vn-stage" id="vnStage">
+
+    <div class="vn-content" id="vnContent">
+
+      <!-- SCENE 0: RAISE YOUR HAND — first thing user sees -->
+      <div class="vn-scene center" data-scene="0">
+        <div class="hand-demo">
+          <img class="hand-demo-gif" src="assets/claw_open.gif" alt="open paw" />
+          <span class="hand-demo-label">raise your hand.</span>
+          <span class="hand-demo-sub">Explore My Pawsona under your own paw.</span>
+        </div>
+        <div class="vn-dialogue center">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="I have heard that you want to be a cat. You have come to the right place. Here, no humans are allowed. Raise your hand. See the paw? Now make a Fist"></div>
+          <span class="vn-advance-hint" id="scene0hint">● webcam loading...</span>
+        </div>
+      </div>
+
+      <!-- SCENE 1: Welcome -->
+      <div class="vn-scene center" data-scene="1">
+        <h1 class="scene-title">welcome.</h1>
+        <p class="scene-subtitle">no humans allowed.</p>
+        <div class="vn-dialogue center">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="Good Job, that was your first interaction with the world of Pawsona. But before you can fully enter, you must look like a cat."></div>
+          <span class="vn-advance-hint">▼ paw</span>
+        </div>
+      </div>
+
+      <!-- SCENE 2: Drawing — pen, eraser, fill GIFs -->
+      <div class="vn-scene" data-scene="2">
+        <h2 class="scene-h2">draw yourself as a cat.</h2>
+        <div class="multi-visual">
+          <div class="multi-visual-item">
+            <img src="assets/pen.gif" alt="pen" onerror="this.style.opacity='0.3'" />
+            <span>pen</span>
+          </div>
+          <div class="multi-visual-item">
+            <img src="assets/eraser.gif" alt="eraser" onerror="this.style.opacity='0.3'" />
+            <span>eraser</span>
+          </div>
+          <div class="multi-visual-item">
+            <img src="assets/fill.gif" alt="fill" onerror="this.style.opacity='0.3'" />
+            <span>fill</span>
+          </div>
+        </div>
+        <div class="vn-dialogue">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="I have given you some tools to draw your new cat-self. And since you are still getting used to your new paw, I have allowed a switch back to your human mouse. But just know, you won't be able to use it after that point."></div>
+          <span class="vn-advance-hint">▼ paw</span>
+        </div>
+      </div>
+
+      <!-- SCENE 3: Petting — claw waving -->
+      <div class="vn-scene" data-scene="3">
+        <h2 class="scene-h2">wave to pet yourself.</h2>
+        <div class="hand-demo">
+          <img class="hand-demo-gif" src="assets/claw_open.gif" alt="wave paw"
+            style="animation: waveHand 1.2s ease-in-out infinite;" />
+          <span class="hand-demo-label">wave your paw.</span>
+          <span class="hand-demo-sub">near a cat to pet it</span>
+        </div>
+        <div class="vn-dialogue">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="In Pawsona, you can interact with yourself, or any of your cat creations. Wave your open paw near your cat to pet it."></div>
+          <span class="vn-advance-hint">▼ paw</span>
+        </div>
+      </div>
+
+      <!-- SCENE 4: Objects — yarn, food, butterfly -->
+      <div class="vn-scene" data-scene="4">
+        <h2 class="scene-h2">give yourself entertainment.</h2>
+        <div class="multi-visual">
+          <div class="multi-visual-item">
+            <img src="assets/yarn.gif" alt="yarn" onerror="this.style.opacity='0.3'" />
+            <span>yarn</span>
+          </div>
+          <div class="multi-visual-item">
+            <img src="assets/food.gif" alt="food" onerror="this.style.opacity='0.3'" />
+            <span>food</span>
+          </div>
+          <div class="multi-visual-item">
+            <img src="assets/butterfly.gif" alt="butterfly" onerror="this.style.opacity='0.3'" />
+            <span>butterfly</span>
+          </div>
+        </div>
+        <div class="vn-dialogue">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="Grab and drag items for your pawsonas. Make sure you keep yourself entertained."></div>
+          <span class="vn-advance-hint">▼ paw</span>
+        </div>
+      </div>
+
+      <!-- SCENE 5: Don't leave alone — swear bubbles -->
+      <div class="vn-scene" data-scene="5">
+        <h2 class="scene-h2">do not leave yourself alone.</h2>
+        <div class="swear-demo">
+          <div class="swear-bubble-demo">@#$%!</div>
+          <div class="swear-bubble-demo" style="animation-delay:0.3s">*&@!!</div>
+          <div class="swear-bubble-demo" style="animation-delay:0.6s">!#@$</div>
+          <div class="swear-bubble-demo" style="animation-delay:0.9s">%@#!</div>
+        </div>
+        <div class="vn-dialogue">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="Make sure you don't leave yourself alone for too long. Pawsonas have quite the attitude if you leave them alone for too long."></div>
+          <span class="vn-advance-hint">▼ paw</span>
+        </div>
+      </div>
+
+      <!-- SCENE 6: Shelter -->
+      <div class="vn-scene" data-scene="6">
+        <h2 class="scene-h2">visit the shelter.</h2>
+        <div class="hand-demo">
+          <img class="hand-demo-gif" src="assets/shelter.gif" alt="shelter"
+            style="width:220px;animation:none;border-radius:50%;border:3px solid var(--dark-border);" />
+          <span class="hand-demo-label">the clowder.</span>
+          <span class="hand-demo-sub">other pawsonas live here</span>
+        </div>
+        <div class="vn-dialogue">
+          <div class="vn-dialogue-name">???</div>
+          <div class="vn-dialogue-text" data-text="You can also visit the cat shelter. You humans have very interesting taste in what you consider a cat. If you still want to be a cat in the world of Pawsona after all of that, stamp the contract and start the new journey."></div>
+          <span class="vn-advance-hint">▼ click to sign</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Webcam panel -->
+    <div class="vn-webcam">
+      <p class="vn-webcam-label"></p>
+      <div class="vn-webcam-frame">
+        <div class="vn-webcam-inner">
+          <video id="vnVideo" autoplay playsinline muted></video>
+          <img class="vn-cat-overlay" id="catOverlay" src="assets/icon.gif" alt="" />
+        </div>
+      </div>
+      <p class="vn-webcam-status" id="webcamStatus">connecting...</p>
+    </div>
+
+  </div>
+
+  <!-- Contract -->
+  <div class="contract-stage" id="contractStage">
+    <div class="contract-paper">
+      <div class="contract-sign-area" id="contractSignArea">
+        <div class="contract-sign-prompt">Stamp to begin your new life</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden video for webcam.js hand detection -->
+  <video id="webcamFeed" autoplay playsinline muted hidden></video>
+
+
+  <script>
+  /* ── PROGRESS DOTS ── */
+  const TOTAL_SCENES = 8; // 6 scenes + contract
+  const dotsEl = document.getElementById('progressDots');
+  for (let i = 0; i < TOTAL_SCENES; i++) {
+    const d = document.createElement('div');
+    d.className = 'vn-dot';
+    dotsEl.appendChild(d);
+  }
+  function updateDots(idx) {
+    dotsEl.querySelectorAll('.vn-dot').forEach((d, i) => {
+      d.classList.remove('active','done');
+      if (i < idx) d.classList.add('done');
+      else if (i === idx) d.classList.add('active');
+    });
+  }
+
+  /* ── TYPEWRITER ── */
+  let typing = false, typingTimer = null, currentFullText = '', currentEl = null;
+  let meowActive = false, meowCurrent = null;
+
+  function playMeowChain() {
+    if (!meowActive) return;
+    const m = new Audio('assets/meow.mp3');
+    m.volume = 0.25 + Math.random() * 0.1;
+    m.playbackRate = 0.9 + Math.random() * 0.6;
+    meowCurrent = m;
+    m.play().catch(() => {});
+    m.addEventListener('ended', () => { if (meowActive) playMeowChain(); });
+  }
+  function startMeow() { if (!meowActive) { meowActive = true; playMeowChain(); } }
+  function stopMeow()  { meowActive = false; if (meowCurrent) { meowCurrent.pause(); meowCurrent = null; } }
+
+  function typeText(el, text) {
+    currentFullText = text; currentEl = el;
+    typing = true; el.textContent = '';
+    startMeow();
+    let i = 0;
+    function tick() {
+      if (i >= text.length) { typing = false; stopMeow(); return; }
+      el.textContent += text[i++];
+      typingTimer = setTimeout(tick, /[.,!?]/.test(text[i-2]) ? 180 : 28);
+    }
+    tick();
+  }
+  function finishTyping() {
+    clearTimeout(typingTimer);
+    if (currentEl) currentEl.textContent = currentFullText;
+    typing = false; stopMeow();
+  }
+
+  /* ── SCENE ENGINE ── */
+  let sceneIndex = 0;
+  const scenes = document.querySelectorAll('.vn-scene');
+  let handModeEnabled = false;
+
+  function showScene(idx) {
+    scenes.forEach(s => s.classList.remove('active'));
+    const scene = scenes[idx];
+    if (!scene) return;
+    scene.classList.add('active');
+    updateDots(idx);
+    const textEl = scene.querySelector('.vn-dialogue-text');
+    if (textEl) typeText(textEl, textEl.getAttribute('data-text'));
+
+    // Scene 1: hand intro — enable claw cursor via webcam.js
+    if (idx === 1 && !handModeEnabled) {
+      handModeEnabled = true;
+      document.body.classList.add('hand-mode');
+      // webcam.js auto-started and is running — just enable its cursor style
+      const hs = document.getElementById('pawsona-hide-cursor');
+      if (hs) hs.disabled = false;
+    }
+  }
+
+  let introReady = false;  // set true once webcam.js signals it's live
+
+  // webcam.js sets window._webcamLive when first frame is detected
+  // We poll for it rather than relying on timing
+  function waitForWebcam(cb) {
+    if (window._webcamLive) { cb(); return; }
+    const t = setInterval(() => {
+      if (window._webcamLive) { clearInterval(t); cb(); }
+    }, 200);
+  }
+
+  function nextScene() {
+    if (!introReady) return;   // ignore clicks during loading
+    if (typing) { finishTyping(); return; }
+    sceneIndex++;
+    if (sceneIndex >= scenes.length) { showContract(); return; }
+    showScene(sceneIndex);
+  }
+
+  document.getElementById('vnStage').addEventListener('click', e => {
+    if (e.target.closest('.vn-webcam')) return;
+    nextScene();
+  });
+
+  // Fist gesture directly advances scene (bypasses click event chain entirely)
+  window._onHandFist = function(clientX, clientY) {
+    if (!introReady) return;
+    // Don't advance if fist is over a draggable element (cat/toy)
+    const el = document.elementFromPoint(clientX, clientY);
+    if (el && el.closest && el.closest('.cat-entity, .play-toy')) return;
+    nextScene();
+  };
+
+  /* ── CONTRACT ── */
+  function showContract() {
+    document.getElementById('vnStage').style.display = 'none';
+    document.getElementById('contractStage').classList.add('active');
+    updateDots(6);
+  }
+
+  const signArea = document.getElementById('contractSignArea');
+
+  function doStamp(clientX, clientY) {
+    const rect = signArea.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    if (signArea.dataset.stamped === '1') return;
+    signArea.dataset.stamped = '1';
+    const stamp = document.createElement('div');
+    stamp.className = 'paw-stamp';
+    stamp.innerHTML = '<img src="assets/stamp.gif" alt="stamp">';
+    stamp.style.left = x + 'px';
+    stamp.style.top  = y + 'px';
+    signArea.appendChild(stamp);
+    localStorage.setItem('pawsona_intro_seen', '1');
+    setTimeout(() => { window.location.href = 'app.html'; }, 1500);
+  }
+
+  signArea.addEventListener('click', e => { doStamp(e.clientX, e.clientY); });
+
+  window._tryStamp = function(clientX, clientY) {
+    const rect = signArea.getBoundingClientRect();
+    if (clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top  && clientY <= rect.bottom) {
+      doStamp(clientX, clientY);
+      return true;
+    }
+    return false;
+  };
+
+  /* ── FACE MESH (webcam panel cat overlay) ── */
+  const vnVideo   = document.getElementById('vnVideo');
+  const catOverlay = document.getElementById('catOverlay');
+  const webcamStatus = document.getElementById('webcamStatus');
+  let faceMesh = null, faceCamStream = null;
+
+  async function initFacePanel() {
+    try {
+      faceCamStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 480, height: 480, facingMode: 'user' }, audio: false
+      });
+      vnVideo.srcObject = faceCamStream;
+      await vnVideo.play();
+      webcamStatus.textContent = 'loading...';
+
+      let waited = 0;
+      while (typeof FaceMesh === 'undefined' && waited < 12000) {
+        await new Promise(r => setTimeout(r, 100)); waited += 100;
+      }
+      if (typeof FaceMesh === 'undefined') { webcamStatus.textContent = '● live (no overlay)'; return; }
+
+      faceMesh = new FaceMesh({ locateFile: f => `https://unpkg.com/@mediapipe/face_mesh@0.4/${f}` });
+      faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+      faceMesh.onResults(r => {
+        if (!r.multiFaceLandmarks || !r.multiFaceLandmarks.length) return;
+        const lm = r.multiFaceLandmarks[0];
+        const cx = (lm[234].x + lm[454].x) / 2;
+        const cy = (lm[10].y  + lm[152].y) / 2;
+        const w  = Math.abs(lm[454].x - lm[234].x);
+        catOverlay.style.left  = ((1 - cx) * 100) + '%';
+        catOverlay.style.top   = (cy * 100) + '%';
+        catOverlay.style.width = (w * 100 * 2.3) + '%';
+      });
+      webcamStatus.textContent = '● live';
+      (async function loop() {
+        if (vnVideo.videoWidth) await faceMesh.send({ image: vnVideo }).catch(() => {});
+        requestAnimationFrame(loop);
+      })();
+    } catch(e) {
+      webcamStatus.textContent = 'webcam off';
+    }
+  }
+
+  /* ── BOOT ── */
+  showScene(0);
+
+  window.addEventListener('load', () => {
+    setTimeout(initFacePanel, 200);
+
+    // Block scene advances until webcam is live
+    // Show a loading hint in the advance button
+    const hint = document.getElementById('scene0hint');
+    if (hint) hint.textContent = '● webcam loading...';
+
+    waitForWebcam(() => {
+      // 2-second cooldown after webcam_on notice before accepting fist
+      setTimeout(() => {
+        introReady = true;
+        if (hint) hint.textContent = '▼ click or fist';
+      }, 2000);
+    });
+  });
+
+  // On scene 0 & 1, keep the pawsona-hide-cursor style disabled
+  // so the OS cursor works for clicking through the first two scenes
+  window.addEventListener('load', () => {
+    const hs = document.getElementById('pawsona-hide-cursor');
+    if (hs) hs.disabled = true; // disabled until scene 1 transition
+  });
+  </script>
+
+  <!-- Hand detection — auto-starts but cursor hidden until scene 1 -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.js" defer></script>
+  <script src="js/webcam.js" defer></script>
+
+</body>
+</html>

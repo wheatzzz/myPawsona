@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawsona</title>
+  <link rel="icon" type="image/gif" href="assets/icon.gif" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body.landing {
+      
+      overflow: hidden;
+      background: var(--cream);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+    .landing-logo {
+      width: min(520px, 70vw);
+      height: auto;
+      image-rendering: -webkit-optimize-contrast;
+    }
+    .landing-tagline {
+      font-family: var(--font-body);
+      font-size: 1.1rem;
+      color: var(--ink-mid);
+      max-width: 480px;
+      text-align: center;
+    }
+
+    /* Enter button as a hand-drawn frame */
+    .landing-enter {
+      position: relative;
+      background: none;
+      border: none;
+      padding: 1.2rem 3rem;
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      color: var(--ink);
+      
+      transition: transform 0.18s ease;
+      margin-top: 0.5rem;
+    }
+    .landing-enter::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('assets/frame.gif') center/100% 100% no-repeat;
+      pointer-events: none;
+    }
+    .landing-enter:hover { transform: scale(1.06); }
+
+    .landing-secondary {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--ink-mid);
+      text-decoration: underline;
+      background: none;
+      border: none;
+      
+      padding: 0.4rem 0.8rem;
+    }
+    .landing-secondary:hover { color: var(--ink); }
+
+    /* Floating background icons */
+    .bg-paw {
+      position: fixed;
+      width: 60px;
+      opacity: 0.15;
+      pointer-events: none;
+      animation: floatPaw 8s ease-in-out infinite;
+    }
+    @keyframes floatPaw {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50%      { transform: translateY(-20px) rotate(8deg); }
+    }
+  </style>
+  <style>
+    * { cursor: none !important; }
+  </style>
+</head>
+<body class="landing">
+  <!-- SVG filters: wigglyFilter for cats, wiggleUI for interface elements -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="wigglyFilter" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="1" result="noise">
+          <animate attributeName="seed" values="1;2;3;4;5;6;7;8;1" dur="0.8s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
+      </filter>
+      <filter id="wiggleUI" x="-3%" y="-3%" width="106%" height="106%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.022" numOctaves="3" seed="5" result="noise">
+          <animate attributeName="seed" values="5;6;7;8;9;10;5" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="baseFrequency" values="0.018 0.022;0.022 0.018;0.018 0.022" dur="4s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Mouse-driven claw cursor for landing page -->
+  <img id="indexClaw" src="assets/claw_open.gif" style="
+    position:fixed;width:126px;height:auto;pointer-events:none;
+    z-index:999999;display:none;
+    transform:translate(-30%,-20%);
+    image-rendering:-webkit-optimize-contrast;
+    filter: drop-shadow(-2px -2px 0px #000) drop-shadow(2px -2px 0px #000)
+            drop-shadow(-2px  2px 0px #000) drop-shadow(2px  2px 0px #000);
+  " alt="" />
+  <script>
+    (function(){
+      const claw = document.getElementById('indexClaw');
+      document.addEventListener('mousemove', e => {
+        claw.style.display = 'block';
+        claw.style.left = e.clientX + 'px';
+        claw.style.top  = e.clientY + 'px';
+      });
+      document.addEventListener('mousedown', () => {
+        claw.src = 'assets/claw_grab.gif?t=' + Date.now();
+      });
+      document.addEventListener('mouseup', () => {
+        claw.src = 'assets/claw_open.gif?t=' + Date.now();
+      });
+    })();
+  </script>
+
+  <img class="bg-paw" src="assets/icon.gif" style="top: 8%;  left: 6%;  animation-delay: 0s;"   alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="top: 18%; left: 28%; animation-delay: 1.2s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="top: 5%;  right: 18%; animation-delay: 2.4s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="top: 45%; left: 3%;  animation-delay: 3.1s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="top: 38%; right: 8%; animation-delay: 0.7s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="bottom: 25%; left: 12%; animation-delay: 4.5s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="bottom: 8%;  left: 35%; animation-delay: 2s;"  alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="bottom: 18%; right: 25%; animation-delay: 5.2s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="bottom: 5%;  right: 6%; animation-delay: 1.8s;" alt="" />
+  <img class="bg-paw" src="assets/icon.gif" style="top: 62%; left: 45%; animation-delay: 3.7s;" alt="" />
+
+  <img class="landing-logo" src="assets/logo.gif" alt="My Pawsona" />
+
+  <p class="landing-tagline">
+    Welcome to My Pawsona<br>
+  </p>
+
+  <button class="landing-enter" id="btnEnter">enter →</button>
+  <button class="landing-secondary" id="btnSkipIntro" hidden>skip intro →</button>
+
+  <script>
+
+    const seenIntro = localStorage.getItem('pawsona_intro_seen');
+    const skipBtn   = document.getElementById('btnSkipIntro');
+    if (seenIntro === '1') skipBtn.hidden = false;
+
+    document.getElementById('btnEnter').addEventListener('click', () => {
+      window.location.href = 'intro.html';
+    });
+    skipBtn.addEventListener('click', () => {
+      window.location.href = 'app.html';
+    });
+  </script>
+</body>
+</html>

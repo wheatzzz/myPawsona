@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pawsona — Play</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; script-src * 'self' data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src * 'self' data: blob:; img-src * 'self' data: blob:; media-src * 'self' data: blob:; style-src * 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src * 'self' data: https://fonts.gstatic.com;" />
+  <link rel="icon" type="image/gif" href="assets/icon.gif" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="play">
+
+  <audio id="pawsonaAudio" src="assets/play.mp3" preload="auto"></audio>
+
+  <!-- SVG filters: wigglyFilter for cats, wiggleUI for interface elements -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <!-- Cat sprite wiggle (existing, unchanged) -->
+      <filter id="wigglyFilter" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="1" result="noise">
+          <animate attributeName="seed" values="1;2;3;4;5;6;7;8;1" dur="0.8s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.2" />
+      </filter>
+
+      <!-- UI hand-drawn wiggle — applied to borders/panels/buttons/text -->
+      <!-- Slower, subtler: baseFrequency lower, scale smaller, speed ~3s -->
+      <filter id="wiggleUI" x="-3%" y="-3%" width="106%" height="106%" color-interpolation-filters="linearRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.022" numOctaves="3" seed="5" result="noise">
+          <animate attributeName="seed" values="5;6;7;8;9;10;5" dur="3s" repeatCount="indefinite" />
+          <animate attributeName="baseFrequency" values="0.018 0.022;0.022 0.018;0.018 0.022" dur="4s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.8" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Side nav (Play active) -->
+  <nav class="side-nav">
+    <a href="index.html" class="side-nav-logo">
+      <img src="assets/logo.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="play.html"    class="side-nav-icon active">
+      <img src="assets/icon.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="app.html"     class="side-nav-icon">
+      <img src="assets/draw.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="shelter.html" class="side-nav-icon">
+      <img src="assets/shelter.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <a href="intro.html"   class="side-nav-icon">
+      <img src="assets/intro.gif" alt="" onerror="this.style.display='none'" />
+    </a>
+    <button class="side-nav-clear" id="btnDevClear">clear</button>
+  </nav>
+
+  <!-- Interactive space -->
+  <div class="interactive-space" id="interactiveSpace">
+
+    <!-- Background room -->
+
+    <!-- Draggable toys (coloured elements) -->
+    <img src="assets/yarn.gif"      class="play-toy" id="toyYarn"      alt="yarn" />
+    <img src="assets/butterfly.gif" class="play-toy" id="toyButterfly" alt="butterfly" />
+    <img src="assets/food.gif"      class="play-toy" id="toyFood"      alt="food" />
+
+    <div class="reaction-layer" id="reactionLayer"></div>
+
+    <!-- Empty state, only shown if no cats -->
+    <div class="empty-play" id="emptyPlay" hidden>
+      <p class="empty-play-title">no pawsonas yet</p>
+      <p class="empty-play-sub">draw one to bring it to life</p>
+      <a href="app.html" class="empty-play-cta">draw one →</a>
+      <p class="empty-play-debug" id="emptyPlayDebug" style="margin-top:1.5rem; font-size:11px; color:var(--ink-mid);"></p>
+    </div>
+  </div>
+
+  <!-- Stage controls -->
+  <!-- Stage controls — buttons removed, hand gestures handle interactions -->
+  <div class="stage-controls" id="stageControls" hidden></div>
+  <!-- Stub elements so main.js doesn't error on getElementById -->
+  <button id="btnPetAll"  style="display:none"></button>
+  <button id="btnWebcam"  style="display:none"></button>
+  <span   id="webcamPill" style="display:none"></span>
+
+  <!-- Hidden webcam video -->
+  <video id="webcamFeed" autoplay playsinline muted hidden></video>
+
+  <!-- ── SCRIPTS ── -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.0.7/dist/handpose.js" defer></script>
+
+  <script src="js/rig.js" defer></script>
+  <script src="js/gallery.js" defer></script>
+  <script src="https://unpkg.com/@mediapipe/face_mesh@0.4/face_mesh.js" crossorigin="anonymous"></script>
+  <script src="js/webcam.js" defer></script>
+  <script src="js/main.js" defer></script>
+
+  <script>
+    document.getElementById('btnDevClear').addEventListener('click', () => {
+      if (confirm('Clear all saved cats?')) {
+        localStorage.removeItem('pawsona_cats_v1');
+        location.reload();
+      }
+    });
+
+    /* ── Play area styles are in style.css ── */
+
+    /* Randomise toy positions on each load — scattered across the space */
+    function randToyPos() {
+      const space = document.getElementById('interactiveSpace');
+      const W = space ? space.offsetWidth  : 800;
+      const H = space ? space.offsetHeight : 500;
+      const pad = 60;
+      return {
+        x: Math.floor(pad + Math.random() * (W - pad * 2 - 90)),
+        y: Math.floor(120 + Math.random() * (H - 120 - pad - 90)),
+      };
+    }
+
+    // Ensure toys don't spawn too close to each other
+    function scatterToys() {
+      const ids = ['toyYarn', 'toyButterfly', 'toyFood'];
+      const placed = [];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let pos, tries = 0;
+        do {
+          pos = randToyPos();
+          tries++;
+        } while (tries < 20 && placed.some(p => Math.hypot(p.x - pos.x, p.y - pos.y) < 130));
+        placed.push(pos);
+        el.style.left = pos.x + 'px';
+        el.style.top  = pos.y + 'px';
+      });
+    }
+    scatterToys();
+
+    /* Drag logic — mouse + touch */
+    function makeDraggable(el) {
+      let startX, startY, origX, origY;
+
+      function onStart(e) {
+        if (el.dataset.locked === '1') return;
+        e.preventDefault();
+        el.classList.add('dragging');
+        const pt = e.touches ? e.touches[0] : e;
+        startX = pt.clientX;
+        startY = pt.clientY;
+        origX  = parseInt(el.style.left) || 0;
+        origY  = parseInt(el.style.top)  || 0;
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup',   onEnd);
+        window.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend',  onEnd);
+      }
+
+      function onMove(e) {
+        e.preventDefault();
+        const pt = e.touches ? e.touches[0] : e;
+        const dx = pt.clientX - startX;
+        const dy = pt.clientY - startY;
+        const space = document.getElementById('interactiveSpace');
+        const maxX  = space.offsetWidth  - el.offsetWidth;
+        const maxY  = space.offsetHeight - el.offsetHeight;
+        el.style.left = Math.max(0, Math.min(maxX, origX + dx)) + 'px';
+        el.style.top  = Math.max(0, Math.min(maxY, origY + dy)) + 'px';
+      }
+
+      function onEnd() {
+        el.classList.remove('dragging');
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup',   onEnd);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend',  onEnd);
+        if (window._checkToyDrop) window._checkToyDrop(el);
+      }
+
+      el.addEventListener('mousedown',  onStart);
+      el.addEventListener('touchstart', onStart, { passive: false });
+    }
+
+    ['toyYarn', 'toyButterfly', 'toyFood'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) makeDraggable(el);
+    });
+
+    // Show empty state if no cats after page load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const space = document.getElementById('interactiveSpace');
+        const hasCats = space && space.querySelector('.cat-entity');
+        if (!hasCats) {
+          document.getElementById('emptyPlay').hidden = false;
+          try {
+            const raw = localStorage.getItem('pawsona_cats_v1');
+            const dbg = document.getElementById('emptyPlayDebug');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              dbg.textContent = `(${parsed.length} cat${parsed.length===1?'':'s'} found in storage — if you see this, there's a rendering error. Check the browser console.)`;
+            } else {
+              dbg.textContent = '(storage is empty)';
+            }
+          } catch {}
+        }
+      }, 1200);
+    });
+  </script>
+
+</body>
+</html>
