@@ -55,7 +55,6 @@
     <a href="intro.html"   class="side-nav-icon">
       <img src="assets/intro.gif" alt="" onerror="this.style.display='none'" />
     </a>
-    <button class="side-nav-clear" id="btnDevClear">clear</button>
   </nav>
 
   <!-- Interactive space -->
@@ -101,12 +100,6 @@
   <script src="js/main.js" defer></script>
 
   <script>
-    document.getElementById('btnDevClear').addEventListener('click', () => {
-      if (confirm('Clear all saved cats?')) {
-        localStorage.removeItem('pawsona_cats_v1');
-        location.reload();
-      }
-    });
 
     /* ── Play area styles are in style.css ── */
 
