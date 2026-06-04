@@ -118,7 +118,6 @@
     <a href="intro.html"   class="side-nav-icon">
       <img src="assets/intro.gif" alt="" onerror="this.style.display='none'" />
     </a>
-    <button class="side-nav-clear" id="btnShelterClear">clear</button>
   </nav>
 
   <!-- Floating header -->
@@ -374,11 +373,6 @@
     }, 3000);
 
     /* ── Clear button ── */
-    document.getElementById('btnShelterClear').addEventListener('click', () => {
-      if (!confirm('Remove all cats from the shelter?')) return;
-      localStorage.removeItem('pawsona_cats_v1');
-      location.reload();
-    });
 
     /* ── Resize ── */
     window.addEventListener('resize', () => {
